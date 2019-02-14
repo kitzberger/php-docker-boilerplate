@@ -49,7 +49,7 @@
 #
 #++++++++++++++++++++++++++++++++++++++
 
-FROM webdevops/php-apache-dev:ubuntu-16.04
+FROM webdevops/php-apache-dev:ubuntu-18.04
 
 ENV PROVISION_CONTEXT "development"
 
@@ -63,3 +63,30 @@ RUN ln -sf /opt/docker/etc/cron/crontab /etc/cron.d/docker-boilerplate \
 
 # Configure volume/workdir
 WORKDIR /app/
+
+RUN apt-get -qq update && apt-get -q install -y --force-yes \
+    bash-completion \
+    make \
+    patch \
+    sudo \
+    mysql-client \
+    npm \
+    nodejs
+
+# Allow "application" user to sudo to root
+RUN echo 'application ALL=NOPASSWD: ALL' > /etc/sudoers.d/application
+
+
+
+
+
+ADD container-files /
+
+# Fix application uid/gid
+ENV APPLICATION_UID_OVERRIDE 1001
+ENV APPLICATION_GID_OVERRIDE 1001
+RUN echo "Change uid/gid of 'application' user ($APPLICATION_UID_OVERRIDE:$APPLICATION_GID_OVERRIDE)" && \
+    usermod -u $APPLICATION_UID_OVERRIDE application && \
+    groupmod -g $APPLICATION_GID_OVERRIDE application && \
+    usermod -g $APPLICATION_GID_OVERRIDE application &&     \
+    chown "$APPLICATION_USER":"$APPLICATION_GROUP" -R /app /home/application
